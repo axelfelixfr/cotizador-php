@@ -1,5 +1,8 @@
 <?php
 
+// Inicializamos las funcionalidades de las sesiones
+session_start();
+
 // Variables
 
 // Para saber si estamos en servidor local
