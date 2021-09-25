@@ -241,7 +241,7 @@ function json_build($status = 200, $data = null, $msg = ''){
   return json_encode($json);
 }
 
-function json_output(){
+function json_output($json){
   // Colocamos los headers para la lectura correctamente
   header('Access-Control-Allow-Origin: *');
   // Se especifica que debe ser un json y el charset uft-8 para que acepte ñ, caracteres, etc
@@ -256,4 +256,36 @@ function json_output(){
   echo $json;
 
   return true;
+}
+
+function get_module($view, $data = []) {
+  $view = $view.'.php';
+  if(!is_file($view)){
+    return false;
+  }
+
+  // Conversión de la data a json
+  // Se pasa el array asociativo ($data = []) a un objeto ({})
+  $d = $data = json_decode(json_encode($data));
+
+  // Se inicializa el buffer con ob_start(), absorbe información de forma temporal que no se muestra en la vista
+  ob_start();
+  require_once $view;
+
+  // El contenido del buffer, lo guardamos en $output
+  $output = ob_get_clean();
+  return $output;
+}
+
+// Ejemplo de una función que empiece con "hook_"
+function hook_mi_funcion() {
+  echo 'Ejecutar función';
+}
+
+function hook_get_quote_resumen(){
+
+  // Vamos a cargar la cotización
+  $quote = get_quote();
+  $html = get_module(MODULES.'quote_table', $quote);
+  json_output(json_build(200, ['quote' => $quote, 'html' => $html]));
 }

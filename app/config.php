@@ -21,9 +21,16 @@ define('VIEWS', TEMPLATES.'views'.DS);
 define('UPLOADS', ROOT.'uploads'.DS);
 
 // Para archivos que vayamos a incluir en header o footer (css o js)
-define('CSS', URL.'assets/css/');
-define('IMG', URL.'assets/img/');
-define('JS', URL.'assets/js/');
+define('CSS', URL.'/assets/css/');
+define('IMG', URL.'/assets/img/');
+define('JS', URL.'/assets/js/');
+
+// Personalización
+define('APP_NAME', 'Cotizador App');
+// Calcular los impuestos de todas las operaciones
+define('TAXES_RATE', 16); // Recordar que es un porcentaje
+// Calcular el envío
+define('SHIPPING', 99.50);
 
 // Cargar todas las funciones
 require_once APP.'functions.php';
