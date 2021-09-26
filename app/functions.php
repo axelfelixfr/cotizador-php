@@ -255,7 +255,7 @@ function json_output($json){
   // Imprimimos el json
   echo $json;
 
-  return true;
+  exit();
 }
 
 function get_module($view, $data = []) {
@@ -288,4 +288,49 @@ function hook_get_quote_resumen(){
   $quote = get_quote();
   $html = get_module(MODULES.'quote_table', $quote);
   json_output(json_build(200, ['quote' => $quote, 'html' => $html]));
+}
+
+// Agregar concepto
+function hook_add_to_quote(){
+  // Validar que cada campo haya pasado por POST
+  // Si no existe alguno de los parámetros, entonces se manda un error 403
+  if(!isset($_POST['concepto'], $_POST['tipo'], $_POST['precio_unitario'], $_POST['cantidad'])){
+    // Se pasa un json con el error 403
+    json_output(json_build(403, null, 'Parámetros incompletos'));
+  }
+
+  // Ahora pasamos cada campo que se llego por POST a una variable
+  // Cada campo que sea string la pasamos por trim() 
+  $concept = trim($_POST['concepto']);
+  $type = trim($_POST['tipo']);
+  // Pasamos el price a un valor float
+  // Igual reemplazamos los $ y , por un espacio vacío para evitar errores con str_replace()
+  $price = (float) str_replace([',', '$'], '', $_POST['precio_unitario']);
+  // Pasamos la cantidad a un entero
+  $quantity = (int) trim($_POST['cantidad']);
+  // Pasamos el subtotal a un valor float
+  $subtotal = (float) $price * $quantity;
+  // Igual los impuestos pasan a un float
+  $taxes = (float) $subtotal * (TAXES_RATE / 100);
+
+  $item = [
+    'id' => rand(1111, 9999),
+    'concept' => $concept,
+    'type' => $type,
+    'quantity' => $quantity,
+    'price' => $price,
+    'taxes' => $taxes,
+    'total' => $subtotal
+  ];
+
+  // El if es para ver si hubo un error al agregar el item
+  if(!add_item($item)){
+    // Mandamos el error 400 en un JSON
+    json_output(json_build(400, null, 'Hubo un problema al guardar el concepto de la cotización'));
+  }
+
+  // Si no entro a la condición de arriba, entonces todo paso correctamente
+  // Mandamos el 201 que se trata de haberse realizado exitosamente
+  // El mensaje de 201 es "Created"
+  json_output(json_build(201, get_item($item['id']), 'Concepto agregado correctamente'));
 }

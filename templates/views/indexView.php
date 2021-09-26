@@ -5,6 +5,10 @@
 <!-- Container -->
 <div class="container-fluid py-5">
   <div class="row">
+    <div class="col-12 wrapper_notifications"></div>
+  </div>
+
+  <div class="row">
     <div class="col-lg-8 col-12">
       <div class="card mb-3">
         <div class="card-header">Información del cliente</div>
@@ -31,7 +35,7 @@
         <div class="card">
           <div class="card-header">Agregar nuevo concepto</div>
           <div class="card-body">
-            <form action="">
+            <form id="add_to_quote" method="POST">
               <div class="form-group row">
                 <div class="col-3">
                   <label for="concepto">Concepto</label>
@@ -69,7 +73,7 @@
       <div class="col-lg-4 col-12">
         <div class="card">
           <div class="card-header">Resumen de cotización</div>
-          <div class="card-body wrapper_quote">
+          <div class="card-body wrapper_quote p-0">
             <div class="table-responsive">
               <table class="table table-hover table-striped table-bordered">
                 <thead>
