@@ -163,7 +163,7 @@ function delete_item($id){
   }
 
   // Si hay items iteramos y obtenemos su índice (del item)
-  foreach ($items as $i -> $item) {
+  foreach ($items as $i => $item) {
     // Validar si existe con el mismo id pasado
     if($item['id'] === $id){
       // Eliminamos el item a través de su indice con la función unset()
@@ -185,7 +185,7 @@ function add_item($item){
   if(get_item($item['id']) !== false){
     // Iteramos en cada uno de los items
     // $e_item es igual al item ya existente
-    foreach($items as $i -> $e_item){
+    foreach($items as $i => $e_item){
       // Si el id del item que se mando a la función es igual al ya existente, entonces que lo actualice
       if($item['id'] === $e_item['id']){
         // Entramos a los items y agregamos la actualización del item
@@ -333,4 +333,84 @@ function hook_add_to_quote(){
   // Mandamos el 201 que se trata de haberse realizado exitosamente
   // El mensaje de 201 es "Created"
   json_output(json_build(201, get_item($item['id']), 'Concepto agregado correctamente'));
+}
+
+// Reiniciar la cotización
+function hook_restart_quote(){
+  $items = get_items();
+
+  if(empty($items)){
+    json_output(json_build(400, null, 'No es necesario reiniciar la cotización, no hay conceptos en ella'));
+  }
+
+  if(!restart_quote()){
+    json_output(json_build(400, null, 'Hubo un problema al reiniciar la cotización'));
+  }
+
+  json_output(json_build(200, get_quote(), 'La cotización se ha reiniciado con éxito'));
+}
+
+// Borrar un concepto de la cotización
+function hook_delete_concept() {
+  // Si no existe el id por POST que mande el error 403
+  if(!isset($_POST['id'])){
+    json_output(json_build(403, null, 'Parámetros incompletos'));
+  }
+
+  // Usamos el método delete_item para borrar el concepto y si regresa false (hubo error) manda el error 400
+  if(!delete_item((int) $_POST['id'])){
+    json_output(json_build(400, null, 'Hubo un problema al borrar el concepto'));
+  }
+
+  // Si no hubo error, entonces se recalcula la cotización
+  json_output(json_build(200, get_quote(), 'Concepto borrado con éxito'));
+}
+
+// Cargar un concepto para editar
+function hook_edit_concept(){
+  // Si no existe el id por POST que mande el error 403
+  if(!isset($_POST['id'])){
+    json_output(json_build(403, null, 'Parámetos incompletos'));
+  }
+
+  // Se obtiene el item por el método get_item() a través de su id
+  if(!$item = get_item((int) $_POST['id'])){
+    // Si hubo error al obtener el item, se manda el error 400
+    json_output(json_build(400, null, 'Hubo un problema al cargar el concepto'));
+  }
+
+  // Si no hubo error, entonces se manda el item
+  json_output(json_build(200, $item, 'Concepto cargado con éxito'));
+}
+
+// Guardar los cambios de un concepto
+function hook_save_concept(){
+  // Validar los campos del concepto
+  if(!isset($_POST['id_concepto'], $_POST['concepto'], $_POST['tipo'], $_POST['precio_unitario'], $_POST['cantidad'])){
+    json_output(json_build(403, null, 'Parámetros incompletos'));
+  }
+
+  $id = (int) $_POST['id_concepto'];
+  $concept = trim($_POST['concepto']);
+  $type = trim($_POST['tipo']);
+  $price = (float) str_replace([',', '$'], '', $_POST['precio_unitario']);
+  $quantity = (int) trim($_POST['cantidad']);
+  $subtotal = (float) $price * $quantity;
+  $taxes = (float) $subtotal * (TAXES_RATE / 100);
+
+  $item = [
+    'id' => $id,
+    'concept' => $concept,
+    'type' => $type,
+    'quantity' => $quantity,
+    'price' => $price,
+    'taxes' => $taxes,
+    'total' => $subtotal
+  ];
+
+  if(!add_item($item)){
+    json_output(json_build(400, null, 'Hubo un problema al guardar los cambios del concepto'));
+  }
+
+  json_output(json_build(200, get_item($id), 'Cambios guardados con éxito'));
 }
