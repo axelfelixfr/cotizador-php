@@ -1,5 +1,7 @@
 <?php
 
+use Dompdf\Dompdf;
+
 function get_view($view_name){
   // Si no existe el archivo de la vista que se quiere ver manda el die()
   // La variable VIEWS se declaro en views
@@ -282,6 +284,7 @@ function hook_mi_funcion() {
   echo 'Ejecutar función';
 }
 
+// Obtener resumen de cotización
 function hook_get_quote_resumen(){
 
   // Vamos a cargar la cotización
@@ -414,3 +417,16 @@ function hook_save_concept(){
 
   json_output(json_build(200, get_item($id), 'Cambios guardados con éxito'));
 }
+
+// Generar pdf
+function generate_pdf($filename = null, $html){
+  $filename = $filename === null ? time().'.pdf' : $filename.'.pdf';
+
+  $pdf = new Dompdf();
+  $pdf->setPaper('A4');
+  $pdf->loadHtml($html);
+  $pdf->render();
+  $pdf->stream($filename);
+  return true;
+}
+// iis

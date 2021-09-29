@@ -32,5 +32,8 @@ define('TAXES_RATE', 16); // Recordar que es un porcentaje
 // Calcular el envío
 define('SHIPPING', 99.50);
 
+// Autoload de composer (Librerías externas)
+require_once ROOT.'vendor/autoload.php';
+
 // Cargar todas las funciones
 require_once APP.'functions.php';
