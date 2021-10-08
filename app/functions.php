@@ -47,6 +47,15 @@ function get_quote() {
   return $_SESSION['new_quote'];
 }
 
+function set_client($client){
+  // Se crea un arreglo ($_SESSION) con los datos del cliente, para tener presente los datos del cliente el session
+  // La variable $client se segmenta por cada campo
+  $_SESSION['new_quote']['name'] = trim($client['nombre']);
+  $_SESSION['new_quote']['company'] = trim($client['empresa']);
+  $_SESSION['new_quote']['email'] = trim($client['email']);
+  return true;
+}
+
 function recalculate_quote() {
   $items = [];
   $subtotal = 0;
@@ -418,15 +427,80 @@ function hook_save_concept(){
   json_output(json_build(200, get_item($id), 'Cambios guardados con éxito'));
 }
 
-// Generar pdf
-function generate_pdf($filename = null, $html){
+// Generar el PDF
+function generate_pdf($filename = null, $html, $save_to_file = true){
+  // Se le coloca un numbre por defecto
   $filename = $filename === null ? time().'.pdf' : $filename.'.pdf';
-
+  
+  // Creamos la instancia del método para generar el PDF
   $pdf = new Dompdf();
+  // El tipo de papel
   $pdf->setPaper('A4');
+  // Se le pasa el HTML que se quiere pasar a PDF
   $pdf->loadHtml($html);
+  // Se renderiza el PDF
   $pdf->render();
+  
+  
+  // Si $save_to_file es true me guarda un archivo, si es false me saca el PDF para descargar
+  if($save_to_file){
+    // Guardamos toda la información binaria del PDF en la variable $output
+    $output = $pdf->output();
+    // Colocamos esa información y el nombre del PDF en un archivo
+    file_put_contents($filename, $output);
+    return true;
+  }
+
+  // Se descarga el PDF
   $pdf->stream($filename);
   return true;
 }
-// iis
+
+// Crear el PDF de la cotización
+function hook_generate_pdf($filename = null, $html, $save_to_file = true){
+  // Validar que hayan llegado los parámetros
+  if(!isset($_POST['nombre'], $_POST['empresa'], $_POST['email'])){
+    json_output(json_build(403, null, 'Parámetos incompletos'));
+  }
+
+  // Validar correo con filter_var que es propia de PHP
+  if(!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)){
+    json_output(json_build(400, null, 'Dirección de correo no válida'));
+  }
+
+  // Se construye un arreglo con los datos del cliente
+  $client = [
+    'nombre' => $_POST['nombre'],
+    'empresa' => $_POST['empresa'],
+    'email' => $_POST['email']
+  ];
+  // Se pasan a la función set_client
+  set_client($client);
+
+  // Cargar cotización
+  $quote = get_quote();
+
+  // Si esta vacía la cotización (sin items) mejor que no pase
+  if(empty($quote['items'])){
+    json_output(json_build(400, null, 'No hay conceptos en la cotización'));
+  }
+
+  // Se crea un modulo
+  $module = MODULES.'pdf_template';
+  // Se usa la función get_module que se creo arriba, para pasarle el modulo y la cotización
+  $html = get_module($module, $quote);
+  // Se le coloca un nombre a la cotización, donde se le concatena el número de cotización
+  $filename = 'cotizacion_'.$quote['number'];
+  // Se le pasa la dirección donde se podra dicha cotización
+  $download = URL.UPLOADS.$filename;
+  // Se accede a la quote y se le agrega al url dicha dirección
+  $quote['url'] = $download;
+
+  // Generar PDF y guardarlo en servidor
+  if(!generate_pdf(UPLOADS, $filename, $html)){
+    json_output(json_build(400, null, 'Hubo un problema al generar la cotización'));
+  }
+
+  // Si todo pasa bien, se mandara dicha cotización
+  json_output(json_build(200, $quote, 'Cotización guardada con éxito'));
+}

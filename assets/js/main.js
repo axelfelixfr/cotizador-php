@@ -1,4 +1,4 @@
-$('document').ready(() => {
+$(document).ready(() => {
   // Función para las notificaciones
   function notify(content, type = 'success') {
     // Seleccionamos el wrapper que esta en el HTML (<div class="wrapper_notifications"></div>)
@@ -381,5 +381,80 @@ $('document').ready(() => {
     wrapper.fadeOut();
     // Se resetea el formulario
     form.trigger('reset');
+  });
+
+  // $('body').on('click', '#generatequote', generate_quote);
+  $('#generate_quote').on('click', e => {
+    console.log('Si paso');
+    e.preventDefault();
+    let button = $(this),
+      default_text = button.html(),
+      new_text = 'Volver a generar',
+      download = $('#download_quote'),
+      send = $('#send_quote'),
+      nombre = $('#nombre').val(),
+      empresa = $('#empresa').val(),
+      email = $('#email').val(),
+      action = 'generate_quote',
+      errors = 0;
+
+    // Validación de la acción
+    if (!confirm('¿Estás seguro?')) return false;
+
+    // Validación de la información
+    if (nombre.length < 5) {
+      notify('Ingresa un nombre para el cliente por favor', 'danger');
+      errors++;
+    }
+
+    if (empresa.length < 5) {
+      notify('Ingresa una empresa válida por favor', 'danger');
+      errors++;
+    }
+
+    if (email.length < 5) {
+      notify('Ingresa una dirección de correo válida por favor', 'danger');
+      errors++;
+    }
+
+    if (errors > 0) {
+      return false;
+    }
+
+    // Petición ajax
+    $.ajax({
+      url: 'ajax.php',
+      type: 'POST',
+      dataType: 'json',
+      cache: false,
+      // Se manda tanto la action como los valores del formulario de información del cliente
+      data: { action, nombre, empresa, email },
+      beforeSend: () => {
+        // Se pone el loading en el body
+        $('body').waitMe();
+        // El contenido del button cambia a 'Generando...'
+        button.html('Generando...');
+      }
+    })
+      .done(res => {
+        if (res.status === 200) {
+          notify(res.msg);
+          download.fadeIn();
+          send.fadeIn();
+          button.html(new_text);
+        } else {
+          notify(res.msg, 'danger');
+          download.fadeOut();
+          send.fadeOut();
+          button.html('Reintentar');
+        }
+      })
+      .fail(err => {
+        notify('Hubo un problema con la petición, intenta de nuevo', 'danger');
+        button.html(default_text);
+      })
+      .always(() => {
+        $('body').waitMe('hide');
+      });
   });
 });
